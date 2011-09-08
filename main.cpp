@@ -1,8 +1,12 @@
 #include "physics.h"
+#include "graphics.h"
 #include "use_sdl.h"
 #include "use_opengl.h"
 
+const Uint32 fps = 60;
 bool done = false;
+Physic physics;
+Graphic graphics;
 
 void Initialize( void );
 void Run( void );
@@ -32,26 +36,27 @@ void Initialize( void )
 	glMatrixMode (GL_PROJECTION);
 	glFrustum (-1.0, 1.0, -1.0, 1.0, 1.5, 1000.0);
 	glMatrixMode (GL_MODELVIEW);
+
+	physics.Initialize();
+	graphics.Initialize();
 }
 
 void Input( void );
-void Update( void );
-void Draw( void );
+void Update( Uint32 diffTime );
 void Run( void )
 {
-	Uint32 time = SDL_GetTicks();
-	Uint32 secondTime = SDL_GetTicks();
+	Uint32 time, secondTime;
+	time = secondTime = SDL_GetTicks();
 	while( !done )
 	{
-		while( time + 10 > secondTime)
+		if( secondTime - time < 1000 / fps )
 		{
-			SDL_Delay(1);
+			SDL_Delay( 1000 / fps - ( secondTime - time ) );
 			secondTime = SDL_GetTicks();
 		}
 
 		Input();
-		Update();
-		Draw();
+		Update( secondTime - time );
 		time = SDL_GetTicks();
 	}
 }
@@ -64,18 +69,10 @@ void Input( void )
 			done = true;
 }
 
-void Update( void )
+void Update( Uint32 diffTime )
 {
+	SDL_Delay( 10 );
+	physics.Update( diffTime );
+	graphics.Update( diffTime );
 }
 
-void Draw( void )
-{
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	glLoadIdentity();
-
-	glTranslatef( 0.0, 0.0, -100.0 );
-	glRotatef( 45, 1.0, 1.0, 1.0 );
-
-	SDL_GL_SwapBuffers();
-}

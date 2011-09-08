@@ -1,11 +1,11 @@
 #pragma once
 #include "vector.h"
 
-class Physic
+class Graphic
 {
 public:
-	Physic();
-	~Physic();
+	Graphic();
+	~Graphic();
 	void Initialize();
 	void Update( unsigned int diffTime );
 private:
