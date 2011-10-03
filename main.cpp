@@ -1,12 +1,13 @@
 #include "physics.h"
 #include "graphics.h"
+#include "logics.h"
 #include "use_sdl.h"
-#include "use_opengl.h"
 
 const Uint32 fps = 60;
 bool done = false;
 Physic physics;
 Graphic graphics;
+Logic logics( physics, graphics );
 
 void Initialize( void );
 void Run( void );
@@ -19,24 +20,7 @@ int main( int argc, char *argv[])
 
 void Initialize( void )
 {
-	SDL_Init( SDL_INIT_VIDEO );
-
-	SDL_SetVideoMode( 800, 600, 0, SDL_OPENGL | SDL_HWSURFACE );
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-	
-	glHint( GL_POINT_SMOOTH_HINT,GL_NICEST );
-	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
-
-	glEnable( GL_DEPTH_TEST ); 
-	glEnable( GL_BLEND );
-
-	glViewport (0, 0, 800, 600);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.5f);
-
-	glMatrixMode (GL_PROJECTION);
-	glFrustum (-1.0, 1.0, -1.0, 1.0, 1.5, 1000.0);
-	glMatrixMode (GL_MODELVIEW);
-
+	logics.Initialize();
 	physics.Initialize();
 	graphics.Initialize();
 }
@@ -67,11 +51,14 @@ void Input( void )
 	while( SDL_PollEvent(&event) )
 		if(event.key.keysym.sym == SDLK_ESCAPE)
 			done = true;
+		else
+			logics.Input( event );
 }
 
 void Update( Uint32 diffTime )
 {
 	SDL_Delay( 10 );
+	logics.Update( diffTime );
 	physics.Update( diffTime );
 	graphics.Update( diffTime );
 }

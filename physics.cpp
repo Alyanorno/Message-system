@@ -12,4 +12,3 @@ void Physic::Initialize()
 void Physic::Update( unsigned int diffTime )
 {}
 
-
