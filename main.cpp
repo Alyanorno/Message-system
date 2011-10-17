@@ -1,3 +1,4 @@
+#include "logistics.h"
 #include "physics.h"
 #include "graphics.h"
 #include "logics.h"
@@ -5,9 +6,10 @@
 
 const Uint32 fps = 60;
 bool done = false;
-Physic physics;
-Graphic graphics;
-Logic logics( physics, graphics );
+Logistic logistics;
+Physic physics( logistics );
+Graphic graphics( logistics );
+Logic logics( logistics );
 
 void Initialize( void );
 void Run( void );
@@ -20,6 +22,7 @@ int main( int argc, char *argv[])
 
 void Initialize( void )
 {
+	logistics.Initialize();
 	logics.Initialize();
 	physics.Initialize();
 	graphics.Initialize();

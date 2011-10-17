@@ -1,6 +1,6 @@
 #include "graphics.h"
 
-Graphic::Graphic()
+Graphic::Graphic( Logistic& _logistics ) : logistics(_logistics)
 {}
 
 Graphic::~Graphic()
@@ -69,6 +69,20 @@ void Graphic::Update( unsigned int diffTime )
 	glDrawArrays( GL_TRIANGLES, 0, models[0].num );
 
 	SDL_GL_SwapBuffers();
+}
+
+
+void Graphic::Messages()
+{
+	for( int i(0); i < logistics.messages.size(); i++ )
+	{
+		if( logistics.messages[i][0] == Logistic::graphic )
+		{
+			// Message for graphic
+			// Do something
+			logistics.messages.erase( logistics.messages.begin() + i);
+		}
+	}
 }
 
 Graphic::Texture Graphic::LoadBmp( std::string name )

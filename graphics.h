@@ -1,4 +1,5 @@
 #pragma once
+#include "logistics.h"
 #include "use_sdl.h"
 #include "use_opengl.h"
 #include "vector.h"
@@ -11,11 +12,18 @@
 class Graphic
 {
 public:
-	Graphic();
+	Graphic( Logistic& _logistics );
 	~Graphic();
 	void Initialize();
 	void Update( Uint32 diffTime );
 private:
+	Logistic& logistics;
+	void Messages();
+	struct Object
+	{
+		Object() : texture(0), model(0) {}
+		unsigned int texture, model;
+	};
 	struct Texture
 	{
 		Texture( int size, int _width, int _height ) : width(_width), height(_height)
@@ -42,6 +50,8 @@ private:
 	};
 	Texture LoadBmp( std::string name );
 	Model LoadObj( std::string name );
+
+	std::vector< Object > objects;
 	std::vector< Texture > textures;
 	std::vector< Model > models;
 };
