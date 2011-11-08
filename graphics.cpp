@@ -74,14 +74,10 @@ void Graphic::Update( unsigned int diffTime )
 
 void Graphic::Messages()
 {
-	for( int i(0); i < logistics.messages.size(); i++ )
+	while( logistics.MessageCount( "graphic" ) )
 	{
-		if( logistics.messages[i][0] == Logistic::graphic )
-		{
-			// Message for graphic
-			// Do something
-			logistics.messages.erase( logistics.messages.begin() + i);
-		}
+		Logistic::Message message( logistics.GetMessage( "physic" ) );
+		// TO DO: Do something
 	}
 }
 

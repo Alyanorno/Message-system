@@ -1,13 +1,16 @@
 #pragma once
 #include <vector>
+#include <string>
+#include <typeinfo>
+#include <map>
 
-struct Logistic
+class Logistic
 {
+public:
 	Logistic();
 	~Logistic();
 	void Initialize();
 
-	enum { physic, graphic, logic };
 	struct Object
 	{
 		struct Id
@@ -18,6 +21,64 @@ struct Logistic
 		std::vector< Id > ids;
 	};
 	std::vector< Object > objects;
-	std::vector< std::vector< int > > messages;
+	
+	struct Message
+	{
+		template< typename T >
+		Message( std::string _to, std::string _info, T& _message ) : to(_to), info(_info), received(false)
+			{ message = new T(_message); type = typeid(T).name(); }
+		Message( const Message& m ) : to(m.to), info(m.info), type(m.type), received(m.received)
+			{ message = m.message; }
+		~Message() {}
+		template< typename T >
+		T ReceiveMessage() 
+		{
+			if( type != typeid(T).name() )
+				throw std::string( "Incorrect type" );
+			if( message == 0 )
+				throw std::string( "Message already received" );
+			T* ptr = reinterpret_cast<T*>(message)
+			T t( *prt );
+			delete ptr;
+			return t;
+		}
+		template< typename T >
+		bool IsMessageType() { return type == typeid(T).name(); }
+		std::string to;
+		std::string info;
+	private:
+		std::string type;
+		bool received;
+		void* message;
+	};
+	bool MessageCount( std::string to ) 
+	{
+		if( recipients.count( to ) == 0 )
+			return 0;
+		else
+			return messages[ recipients[ to ] ].size();
+	}
+	Message GetMessage( std::string to )
+	{
+		if( recipients.count( to ) || messages[ recipients[ to ] ].size() )
+			throw std::string( "No messages to: " + to );
+		Message result( messages[ recipients[ to ] ].back() );
+		messages[ recipients[ to ] ].pop_back();
+		return result;
+	}
+	void AddMessage( Message message )
+	{
+		if( recipients.count( message.to ) == 0 ) {
+			messages.push_back( std::vector< Message >() );
+			recipients.insert( std::pair<std::string,int>( message.to , messages.size() - 1 ) );
+			messages[ recipients[message.to] ].push_back( message );
+		} else {
+			messages[ recipients[ message.to ] ].push_back( message );
+		}
+	}
+
+private:
+	std::map< std::string, int > recipients;
+	std::vector< std::vector< Message > > messages;
 };
 

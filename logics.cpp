@@ -10,6 +10,9 @@ Logic::~Logic()
 
 void Logic::Initialize()
 {
+	// TO DO: Load info about objects from some file
+	// TO DO: Send commands to different parts about what to load
+	// Ex: logistics.messages.push_back( Logistic::Message("graphic", "load", std::string("hej.obj") ) );
 }
 
 void Logic::Update( unsigned int diffTime )
@@ -22,14 +25,10 @@ void Logic::Input( SDL_Event event )
 
 void Logic::Messages()
 {
-	for( int i(0); i < logistics.messages.size(); i++ )
+	while( logistics.MessageCount( "logic" ) )
 	{
-		if( logistics.messages[i][0] == Logistic::logic )
-		{
-			// Message for graphic
-			// Do something
-			logistics.messages.erase( logistics.messages.begin() + i);
-		}
+		Logistic::Message message( logistics.GetMessage( "logic" ) );
+		// TO DO: Do something
 	}
 }
 
