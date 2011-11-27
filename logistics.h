@@ -66,6 +66,12 @@ public:
 		messages[ recipients[ to ] ].pop_back();
 		return result;
 	}
+	// Some very odd error where the compiler adds an A to GetMessage when you call GetMessage
+	// Temporary fix until i find out what the hell is going on
+	Message GetMessageA( std::string to )
+	{
+		return GetMessage( to );
+	}
 	void AddMessage( Message message )
 	{
 		if( recipients.count( message.to ) == 0 ) {

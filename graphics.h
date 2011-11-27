@@ -39,14 +39,14 @@ private:
 		{
 			vertexs = new float[ size * 3 ];
 			normals = new float[ size * 3 ];
-			texCoords = new float[ size * 2 ];
+			textureCoordinates = new float[ size * 2 ];
 		}
 		~Model() {}
-		
+
 		int num;
 		float* vertexs;
 		float* normals;
-		float* texCoords;
+		float* textureCoordinates;
 	};
 	Texture LoadBmp( std::string name );
 	Model LoadObj( std::string name );

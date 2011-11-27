@@ -64,7 +64,7 @@ void Graphic::Update( unsigned int diffTime )
 
 	glVertexPointer( 3, GL_FLOAT, 0, models[0].vertexs );
 	glNormalPointer( GL_FLOAT, 0, models[0].normals );
-	glTexCoordPointer( 2, GL_FLOAT, 0, models[0].texCoords );
+	glTexCoordPointer( 2, GL_FLOAT, 0, models[0].textureCoordinates );
 
 	glDrawArrays( GL_TRIANGLES, 0, models[0].num );
 
@@ -76,7 +76,7 @@ void Graphic::Messages()
 {
 	while( logistics.MessageCount( "graphic" ) )
 	{
-		Logistic::Message message( logistics.GetMessage( "physic" ) );
+		Logistic::Message message( logistics.GetMessage( "graphic" ) );
 		// TO DO: Do something
 	}
 }
@@ -113,7 +113,6 @@ Graphic::Texture Graphic::LoadBmp( std::string name )
 
 #define READ( SIZE ) \
 	in.read( (char*)&SIZE, sizeof(SIZE) );
-	
 	READ( head.type );
 	READ( head.size );
 	READ( head.nothing1 );
@@ -131,6 +130,7 @@ Graphic::Texture Graphic::LoadBmp( std::string name )
 	READ( info_head.pixels_per_meter_y );
 	READ( info_head.colors_used );
 	READ( info_head.important_colors );
+#undef READ
 
 	Texture texture( info_head.image_size, info_head.width, info_head.height );
 
@@ -138,28 +138,30 @@ Graphic::Texture Graphic::LoadBmp( std::string name )
 	in.read( (char*)texture.t, info_head.image_size );
 
 	in.close();
-/*
-	glGenTextures( 1, &texture );
-	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
-	glBindTexture( GL_TEXTURE_2D, texture );
-
-	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT );
-	glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-
-	glTexImage2D( GL_TEXTURE_2D, 0, 3, info_head.width, info_head.height, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, bmp ); */
-	
 	return texture;
 }
 
+static void Add( std::string line, std::vector<float>& v )
+{
+	std::string number;
+	for( int i(0); i < line.size(); i++ )
+		if( line[i] == ' ' ) {
+			v.push_back( atof( number.c_str() ) );
+			number.clear();
+		} else {
+			number.append( 1, line[i] );
+		}
+	if( number != "" )
+		v.push_back( atof( number.c_str() ) );
+}
 Graphic::Model Graphic::LoadObj( std::string name )
 {
 	std::fstream in;
 	in.open( name.c_str(), std::ios::in );
 	assert( in.is_open() );
 
-	int num_vertexs = 0, num_normals = 0, num_texCoords = 0, num_faces = 0;
+	std::vector<float> vertexs, normals, textureCoordinates;
+	std::vector<unsigned int> faces;
 
 	while( !in.eof() )
 	{
@@ -167,139 +169,54 @@ Graphic::Model Graphic::LoadObj( std::string name )
 		getline( in, line );
 
 		if( line[0] == 'v' )
-		{
 			if( line[1] == 't' )
-				num_texCoords++;
+				// Texture Coordinate
+				Add( line.substr(3), textureCoordinates );
 			else if( line[1] == 'n' )
-				num_normals++;
+				// Normal
+				Add( line.substr(3), normals );
 			else
-				num_vertexs++;
-		}
-		else if( line[0] == 'f' )
-			num_faces++;
-	}
-
-	in.close();
-
-	float* tempVertexs = new float[ num_vertexs * 3 ];
-	float* tempNormals = new float[ num_normals * 3 ];
-	float* tempTexCoords = new float[ num_texCoords * 2 ];
-	unsigned int* tempFaces = new unsigned int[ num_faces * 3 * 3 ];
-
-	num_vertexs = num_normals = num_texCoords = num_faces = 0;
-
-	in.clear();
-	in.open( name.c_str(), std::ios::in );
-	assert( in.is_open() );
-
-	while( !in.eof() )
-	{
-		std::string line;
-		getline( in, line );
-
-		if( line[0] == 'v' )
-		{
-			if( line[1] == 't' )
-			{
-				std::string* numbers = new std::string[ line.size() ];
-
-				int count = 0;
-				for( int i(3); i <= line.size() && count < 2; i++ )
-				{
-					if( line[i] == ' ' )
-						count++;
-					else
-						numbers[count].append( 1, line[i] );
-				}
-				assert( count + 1 == 2 ); \
-				for( int i(0); i <= count; i++ ) \
-					tempTexCoords[ num_texCoords * 2 + i ] = atof( numbers[i].c_str() );
-
-				delete numbers;
-				num_texCoords++; 
-			}
-			else if( line[1] == 'n' )
-			{
-				std::string* numbers = new std::string[ line.size() ];
-
-				int count = 0;
-				for( int i(3); i <= line.size() && count < 3; i++ )
-				{
-					if( line[i] == ' ' )
-						count++;
-					else
-						numbers[count].append( 1, line[i] );
-				}
-				assert( count + 1 == 3 ); \
-				for( int i(0); i <= count; i++ ) \
-					tempNormals[ num_normals * 3 + i ] = atof( numbers[i].c_str() );
-
-				delete numbers;
-				num_normals++; 
-			}
-			else
-			{
-				std::string* numbers = new std::string[ line.size() ];
-
-				int count = 0;
-				for( int i(2); i <= line.size() && count < 3; i++ )
-				{
-					if( line[i] == ' ' )
-						count++;
-					else
-						numbers[count].append( 1, line[i] );
-				}
-				assert( count + 1 == 3 ); \
-				for( int i(0); i <= count; i++ ) \
-					tempVertexs[ num_vertexs * 3 + i ] = atof( numbers[i].c_str() );
-
-				delete numbers;
-				num_vertexs++; 
-			}
-		}
+				// Vertex
+				Add( line.substr(2), vertexs );
 		else if( line[0] == 'f' )
 		{
-			std::string number = "";
-			int l(0);
-			for( int i(2); i <= line.size(); i++ )
-			{
-				if( line[i] == ' ' )
-				{
-					tempFaces[ num_faces * 3 + l ] = atoi( number.c_str() ) - 1;
+			// Face
+			std::string number;
+			std::vector<unsigned int> temp;
+			for( int i(2); i < line.size(); i++ )
+				if( line[i] == ' ' || line[i] == '/' ) {
+					temp.push_back( atoi( number.c_str() ) );
 					number.clear();
-					num_faces++;
-					l = 0;
-				}
-				else if( line[i] == '/' )
-				{
-					tempFaces[ num_faces * 3 + l++ ] = atoi( number.c_str() ) - 1;
-					number.clear();
-				}
-				else
+				} else {
 					number.append( 1, line[i] );
-			}
-			if( line[ line.size() - 1 ] != ' ' )
-			{
-				tempFaces[ num_faces * 3 + l++ ] = atoi( number.c_str() ) - 1;
-				num_faces++;
+				}
+			if( number != "" )
+				temp.push_back( atof( number.c_str() ) );
+			if( temp.size() == 3 * 3 ) {
+				for( int i(0); i < temp.size(); i++ )
+					faces.push_back( temp[i] );
+			} else if( temp.size() == 4 * 3 ) {
+				// TO DO: Splitt into 2 triangles
+			} else {
+				assert( 2 + 2 == 5 );
 			}
 		}
 	}
 
 	in.close();
 
-	Model model( num_faces );
-	for( int i(0), l(0), k(0); l < num_faces; i += 3, k += 2, l++ )
+	Model model( faces.size() / 3 );
+	for( int i(0); i < faces.size() / 3; i++ )
 	{
-		model.vertexs[ i + 0 ] = tempVertexs[ tempFaces[ i ] * 3 + 0 ];
-		model.vertexs[ i + 1 ] = tempVertexs[ tempFaces[ i ] * 3 + 1 ];
-		model.vertexs[ i + 2 ] = tempVertexs[ tempFaces[ i ] * 3 + 2 ];
-		model.texCoords[ k + 0 ] = tempTexCoords[ tempFaces[ i + 1 ] * 2 + 0 ];
-		model.texCoords[ k + 1 ] = tempTexCoords[ tempFaces[ i + 1 ] * 2 + 1 ];
-		model.normals[ i + 0 ] = tempNormals[ tempFaces[ i + 2 ] * 3 + 0 ];
-		model.normals[ i + 1 ] = tempNormals[ tempFaces[ i + 2 ] * 3 + 1 ];
-		model.normals[ i + 2 ] = tempNormals[ tempFaces[ i + 2 ] * 3 + 2 ];
+		for( int j(0); j < 3; j++ )
+		{
+			model.vertexs[ i * 3 + j ] = vertexs[ ( faces[ i * 3 + 0 ] - 1 ) * 3 + j ];
+			model.normals[ i * 3 + j ] = normals[ ( faces[ i * 3 + 2 ] - 1 ) * 3 + j ];
+		}
+		for( int j(0); j < 2; j++ )
+			model.textureCoordinates[ i * 2 + j ] = textureCoordinates[ ( faces[ i * 3 + 1 ] - 1 ) * 2 + j ];
 	}
+
 
 	// For debugging
 /*	ofstream out;
@@ -323,14 +240,9 @@ Graphic::Model Graphic::LoadObj( std::string name )
 	{
 		if( i % 2 == 0 )
 			out << endl;
-		out << texCoords[ i ] << "  ";
+		out << textureCoordinates[ i ] << "  ";
 	}
 	out.close(); */
-
-	delete tempVertexs;
-	delete tempNormals;
-	delete tempTexCoords;
-	delete tempFaces;
 
 	return model;
 }
