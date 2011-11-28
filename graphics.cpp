@@ -39,6 +39,8 @@ void Graphic::Initialize()
 
 void Graphic::Update( unsigned int diffTime )
 {
+	Messages();
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glLoadIdentity();
@@ -77,7 +79,15 @@ void Graphic::Messages()
 	while( logistics.MessageCount( "graphic" ) )
 	{
 		Logistic::Message message( logistics.GetMessage( "graphic" ) );
-		// TO DO: Do something
+		
+		if( message.info == "load" ) {
+			std::string r = message.ReceiveMessage< std::string >();
+			textures.push_back( LoadBmp( r + ".bmp" ) );
+			models.push_back( LoadObj( r + ".obj" ) );
+		}
+		else
+			// Must call ReceiveMessage for memory to be deleted
+			throw std::string("Must receive message!");
 	}
 }
 

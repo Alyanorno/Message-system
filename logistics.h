@@ -35,10 +35,11 @@ public:
 		{
 			if( type != typeid(T).name() )
 				throw std::string( "Incorrect type" );
-			if( message == 0 )
+			else if( received )
 				throw std::string( "Message already received" );
-			T* ptr = reinterpret_cast<T*>(message)
-			T t( *prt );
+			received = true;
+			T* ptr = reinterpret_cast<T*>(message);
+			T t( *ptr );
 			delete ptr;
 			return t;
 		}
@@ -51,7 +52,7 @@ public:
 		bool received;
 		void* message;
 	};
-	bool MessageCount( std::string to ) 
+	int MessageCount( std::string to ) 
 	{
 		if( recipients.count( to ) == 0 )
 			return 0;
@@ -60,7 +61,7 @@ public:
 	}
 	Message GetMessage( std::string to )
 	{
-		if( recipients.count( to ) || messages[ recipients[ to ] ].size() )
+		if( recipients.count( to ) == 0 || messages[ recipients[ to ] ].size() == 0 )
 			throw std::string( "No messages to: " + to );
 		Message result( messages[ recipients[ to ] ].back() );
 		messages[ recipients[ to ] ].pop_back();
@@ -76,11 +77,9 @@ public:
 	{
 		if( recipients.count( message.to ) == 0 ) {
 			messages.push_back( std::vector< Message >() );
-			recipients.insert( std::pair<std::string,int>( message.to , messages.size() - 1 ) );
-			messages[ recipients[message.to] ].push_back( message );
-		} else {
-			messages[ recipients[ message.to ] ].push_back( message );
+			recipients.insert( std::pair<std::string,int>( message.to, messages.size() - 1 ) );
 		}
+		messages[ recipients[ message.to ] ].push_back( message );
 	}
 
 private:

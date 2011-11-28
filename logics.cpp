@@ -12,7 +12,7 @@ void Logic::Initialize()
 {
 	// TO DO: Load info about objects from some file
 	// TO DO: Send commands to different parts about what to load
-	// Ex: logistics.messages.push_back( Logistic::Message("graphic", "load", std::string("hej.obj") ) );
+	logistics.AddMessage( Logistic::Message( "graphic", "load", std::string("hej") ) );
 }
 
 void Logic::Update( unsigned int diffTime )
