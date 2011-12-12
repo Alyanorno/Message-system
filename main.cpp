@@ -60,7 +60,6 @@ void Input( void )
 
 void Update( Uint32 diffTime )
 {
-	//SDL_Delay( 10 );
 	logics.Update( diffTime );
 	physics.Update( diffTime );
 	graphics.Update( diffTime );

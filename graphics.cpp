@@ -32,9 +32,6 @@ void Graphic::Initialize()
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_NORMAL_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
-
-	textures.push_back( LoadBmp( "hej.bmp" ) );
-	models.push_back( LoadObj( "hej.obj" ) );
 }
 
 void Graphic::Update( unsigned int diffTime )
@@ -82,15 +79,23 @@ void Graphic::Messages()
 		
 		if( message.info == "load" ) {
 			std::string r = message.ReceiveMessage< std::string >();
-			textures.push_back( LoadBmp( r + ".bmp" ) );
-			models.push_back( LoadObj( r + ".obj" ) );
+			if( r.find( ".bmp" ) != std::string::npos ) {
+				textures.push_back( LoadBmp( r ) );
+			} else if ( r.find( ".obj" ) != std::string::npos ) {
+				models.push_back( LoadObj( r ) );
+			} else {
+				throw std::string( "Cannot load file format!" );
+			}
 		}
 		else
 			// Must call ReceiveMessage for memory to be deleted
-			throw std::string("Must receive message!");
+			throw std::string( "Must receive message!" );
 	}
 }
 
+template < class T >
+void Read( T& size, std::fstream& in ) 
+	{ in.read( (char*)&size, sizeof(T) ); }
 Graphic::Texture Graphic::LoadBmp( std::string name )
 {
 	struct
@@ -101,7 +106,6 @@ Graphic::Texture Graphic::LoadBmp( std::string name )
 		unsigned short nothing2;
 		unsigned int offset;
 	} head;
-
 	struct
 	{
 		unsigned int size;
@@ -121,26 +125,23 @@ Graphic::Texture Graphic::LoadBmp( std::string name )
 	in.open( name.c_str(), std::ios::in | std::ios::binary );
 	assert( in.is_open() );
 
-#define READ( SIZE ) \
-	in.read( (char*)&SIZE, sizeof(SIZE) );
-	READ( head.type );
-	READ( head.size );
-	READ( head.nothing1 );
-	READ( head.nothing2 );
-	READ( head.offset );
+	Read( head.type, in );
+	Read( head.size, in );
+	Read( head.nothing1, in );
+	Read( head.nothing2, in );
+	Read( head.offset, in );
 
-	READ( info_head.size );
-	READ( info_head.width );
-	READ( info_head.height );
-	READ( info_head.one );
-	READ( info_head.bit_per_pixel );
-	READ( info_head.compression );
-	READ( info_head.image_size );
-	READ( info_head.pixels_per_meter_x );
-	READ( info_head.pixels_per_meter_y );
-	READ( info_head.colors_used );
-	READ( info_head.important_colors );
-#undef READ
+	Read( info_head.size, in );
+	Read( info_head.width, in );
+	Read( info_head.height, in );
+	Read( info_head.one, in );
+	Read( info_head.bit_per_pixel, in );
+	Read( info_head.compression, in );
+	Read( info_head.image_size, in );
+	Read( info_head.pixels_per_meter_x, in );
+	Read( info_head.pixels_per_meter_y, in );
+	Read( info_head.colors_used, in );
+	Read( info_head.important_colors, in );
 
 	Texture texture( info_head.image_size, info_head.width, info_head.height );
 

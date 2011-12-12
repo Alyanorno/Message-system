@@ -37,10 +37,13 @@ public:
 				throw std::string( "Incorrect type" );
 			else if( received )
 				throw std::string( "Message already received" );
+			else if( message == 0 )
+				throw std::string( "Error null pointer!" );
 			received = true;
 			T* ptr = reinterpret_cast<T*>(message);
 			T t( *ptr );
-			delete ptr;
+			delete message;
+			message = 0;
 			return t;
 		}
 		template< typename T >
