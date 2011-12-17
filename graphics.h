@@ -8,6 +8,9 @@
 #include <cassert>
 #include <string>
 #include <vector>
+#include "glm\glm.hpp"
+#include "glm\gtc\matrix_transform.hpp"
+#include "glm\gtc\matrix_inverse.hpp"
 
 class Graphic
 {
@@ -48,11 +51,15 @@ private:
 		float* normals;
 		float* textureCoordinates;
 	};
+	enum ShaderType { Vertex, Fragment, Geometry };
+	GLuint LoadShader( std::string name, ShaderType type );
 	Texture LoadBmp( std::string name );
 	Model LoadObj( std::string name );
 
 	std::vector< Object > objects;
 	std::vector< Texture > textures;
 	std::vector< Model > models;
+	glm::mat4 viewMatrix;
+	GLuint shaderProgram;
 };
 

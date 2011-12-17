@@ -1,6 +1,6 @@
 #include "graphics.h"
 
-Graphic::Graphic( Logistic& _logistics ) : logistics(_logistics)
+Graphic::Graphic( Logistic& _logistics ) : logistics(_logistics), viewMatrix( glm::mat4( 1 ) )
 {}
 
 Graphic::~Graphic()
@@ -13,6 +13,24 @@ void Graphic::Initialize()
 	SDL_SetVideoMode( 800, 600, 0, SDL_OPENGL | SDL_HWSURFACE );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 
+	GLint major, minor;
+	glGetIntegerv(GL_MAJOR_VERSION, &major);
+	glGetIntegerv(GL_MINOR_VERSION, &minor);
+	std::cout
+		<< "OpenGL on "
+		<< glGetString(GL_VENDOR)
+		<< glGetString(GL_RENDERER) << '\n';
+	std::cout
+		<< "OpenGL version supported "
+		<< glGetString(GL_VERSION) << '\n';
+	std::cout
+		<< "GLSL version supported "
+		<< glGetString(GL_SHADING_LANGUAGE_VERSION) << '\n';
+	std::cout
+		<< "Will now set GL to version "
+		<< major << minor << '\n';
+
+	
 	glHint( GL_POINT_SMOOTH_HINT,GL_NICEST );
 	glHint( GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST );
 
@@ -32,6 +50,21 @@ void Graphic::Initialize()
 	glEnableClientState( GL_VERTEX_ARRAY );
 	glEnableClientState( GL_NORMAL_ARRAY );
 	glEnableClientState( GL_TEXTURE_COORD_ARRAY );
+
+
+	glm::vec3 eye(0.0f, 0.0f, 2.0f), centre(0, 0, -1.0f), up(0.0f, 1.0f, 0.0f);
+	viewMatrix = glm::lookAt(eye, centre, up);
+
+
+	GLuint vertexShader = LoadShader( "shader.vertex", Vertex );
+	GLuint fragmentShader = LoadShader( "shader.fragment", Fragment );
+
+	GLuint shaderProgram = glCreateProgram();
+
+	glAttachShader( shaderProgram, vertexShader );
+	glAttachShader( shaderProgram, fragmentShader );
+
+	glLinkProgram( shaderProgram );
 }
 
 void Graphic::Update( unsigned int diffTime )
@@ -42,11 +75,24 @@ void Graphic::Update( unsigned int diffTime )
 
 	glLoadIdentity();
 
-	glTranslatef( 10, 10, -100 );
-	glRotatef( 0, 1.0, 0.0, 0.0 );
-	glRotatef( 0, 0.0, 1.0, 0.0 );
-	glRotatef( 0, 0.0, 0.0, 1.0 );
-	
+	glUseProgram( shaderProgram );
+
+	float angle = 90; // degres
+	glm::mat4 modelMatrix( glm::mat4( 1.0f ) );
+	modelMatrix = glm::rotate( modelMatrix, angle, glm::vec3( 0.0f, 1.0f, 0.0f ) );
+
+	glm::mat4 modelViewMatrix = viewMatrix * modelMatrix;
+	glUniformMatrix4fv( glGetUniformLocation( shaderProgram, "modelViewMatrix" ), 1, GL_FALSE, &modelViewMatrix[0][0] );
+
+	glm::mat3 tempMatrix = glm::inverseTranspose( (glm::mat3)modelViewMatrix );
+	glUniformMatrix3fv( glGetUniformLocation( shaderProgram, "normalInverseTranspose"), 1, GL_FALSE, &tempMatrix[0][0] );
+
+	/// handle the light position
+	glm::vec4 lightPosition( -1.0f, 1.0f, 0.0f, 1.0f );
+	lightPosition = viewMatrix * lightPosition;
+	glUniform1fv( glGetUniformLocation( shaderProgram, "lightPosition"), 1, &lightPosition[0] );
+
+	// TEXTURE
 	GLuint texture;
 	glGenTextures( 1, &texture );
 	glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
@@ -58,14 +104,53 @@ void Graphic::Update( unsigned int diffTime )
 	glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
 
 	glTexImage2D( GL_TEXTURE_2D, 0, 3, textures[0].width, textures[0].height, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, textures[0].t );
-	
+
 	glBindTexture( GL_TEXTURE_2D, texture );
+	// END TEXTURE
 
-	glVertexPointer( 3, GL_FLOAT, 0, models[0].vertexs );
-	glNormalPointer( GL_FLOAT, 0, models[0].normals );
-	glTexCoordPointer( 2, GL_FLOAT, 0, models[0].textureCoordinates );
+	// MODEL
+	GLuint Vbo[2];
+	glGenBuffers(2, Vbo);
 
+	int size = models[0].num * sizeof( float );
+
+	// Vertex, normal, texture
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[0]); 
+	glBufferData(GL_ARRAY_BUFFER, size * 3, models[0].vertexs, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[1]);
+	glBufferData(GL_ARRAY_BUFFER, size * 3, models[0].normals, GL_STATIC_DRAW);
+	
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[2]);
+	glBufferData(GL_ARRAY_BUFFER, size * 2, models[0].textureCoordinates, GL_STATIC_DRAW);
+
+	// create 1 VAO
+	GLuint Vao;
+	glGenVertexArrays(1, &Vao);
+	glBindVertexArray(Vao);
+
+	// Vertex, normal, texture
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	GLubyte* null = 0;
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[0]);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, null);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[1]);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, null);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Vbo[2]);
+	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, null);
+
+	glBindVertexArray(Vao);
 	glDrawArrays( GL_TRIANGLES, 0, models[0].num );
+	// END MODEL
+
+	glUseProgram(0);
+	glBindVertexArray(0);
 
 	SDL_GL_SwapBuffers();
 }
@@ -92,6 +177,35 @@ void Graphic::Messages()
 			throw std::string( "Must receive message!" );
 	}
 }
+
+
+GLuint Graphic::LoadShader( std::string name, ShaderType type )
+{
+	std::fstream in( name.c_str() );
+	std::string program( ( std::istreambuf_iterator<char>( in ) ), std::istreambuf_iterator<char>() );
+	in.close();
+
+	GLuint shader;
+	switch( type )
+	{
+		case Vertex:
+			shader = glCreateShader( GL_VERTEX_SHADER );
+			break;
+		case Fragment:
+			shader = glCreateShader( GL_FRAGMENT_SHADER );
+			break;
+		case Geometry:
+			shader = glCreateShader(GL_GEOMETRY_SHADER);
+			break;
+	}
+
+	const char* ptr = program.c_str();
+	glShaderSource( shader, 1, &ptr, 0 );
+	glCompileShader( shader );
+
+	return shader;
+}
+
 
 template < class T >
 void Read( T& size, std::fstream& in ) 
